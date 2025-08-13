@@ -37,6 +37,20 @@
             filter: grayscale(0%);
             opacity: 1;
         }
+        /* Animação de carregamento */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="text-gray-700">
@@ -49,13 +63,16 @@
             <p class="text-lg text-slate-500 mt-2">Ação Social em prol dos que mais precisam.</p>
         </header>
 
-        <!-- Painel de Métricas (Dashboard) -->
-        <section id="dashboard-cards" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-            <!-- Os cards serão inseridos aqui pelo JavaScript -->
-        </section>
+        <!-- Container para o estado da página (loading, error, content) -->
+        <div id="page-content">
+            <div id="loading-state" class="text-center py-10">
+                <div class="loader"></div>
+                <p class="text-slate-500">Carregando dados da planilha...</p>
+            </div>
+        </div>
 
-        <!-- Gráfico de Progresso -->
-        <section class="bg-white rounded-xl card-shadow p-4 md:p-6 mb-8">
+        <!-- Gráfico de Progresso (escondido até os dados carregarem) -->
+        <section id="chart-section" class="bg-white rounded-xl card-shadow p-4 md:p-6 mb-8 hidden">
             <h2 class="text-2xl font-bold text-slate-800 mb-4 text-center">Progresso da Arrecadação</h2>
             <div>
                 <canvas id="progressChart"></canvas>
@@ -76,8 +93,12 @@
         <footer class="text-center pt-6 border-t border-slate-200">
             <h3 class="text-sm font-semibold text-slate-500 mb-4">REALIZAÇÃO</h3>
             <div class="flex justify-center items-center gap-8 mb-6">
-                <img src="https://i.imgur.com/jrLSj8y.png" alt="Logo UMADSA" class="logo-img" onerror="this.onerror=null;this.src='https://placehold.co/150x50/e2e8f0/64748b?text=UMADSA';">
-                <img src="https://i.imgur.com/OCfLpNH.jpeg" alt="Logo Legendários" class="logo-img" onerror="this.onerror=null;this.src='https://placehold.co/150x50/e2e8f0/64748b?text=Legendários';">
+                <a href="https://www.instagram.com/umadsaoficial" target="_blank" rel="noopener noreferrer">
+                    <img src="https://i.imgur.com/jrLSj8y.png" alt="Logo UMADSA" class="logo-img" onerror="this.onerror=null;this.src='https://placehold.co/150x50/e2e8f0/64748b?text=UMADSA';">
+                </a>
+                <a href="https://www.instagram.com/legendarios.zonasulsp" target="_blank" rel="noopener noreferrer">
+                    <img src="https://i.imgur.com/OCfLpNH.jpeg" alt="Logo Legendários" class="logo-img" onerror="this.onerror=null;this.src='https://placehold.co/150x50/e2e8f0/64748b?text=Legendários';">
+                </a>
                 <img src="https://i.imgur.com/Stdkgrs.jpeg" alt="Logo Projeto IDE" class="logo-img" onerror="this.onerror=null;this.src='https://placehold.co/150x50/e2e8f0/64748b?text=Projeto+IDE';">
             </div>
             <p class="text-slate-400 italic text-sm">“Quem se compadece do pobre ao Senhor empresta, e Ele lhe pagará o seu benefício.” (Provérbios 19:17)</p>
@@ -87,26 +108,85 @@
     </div>
 
     <script>
-        // --- DADOS DA PLANILHA (Atualize os valores aqui) ---
-        const donationData = [
-            { name: "Cobertores", icon: "🛏️", current: 80, goal: 100 },
-            { name: "Toucas", icon: "🧢", current: 70, goal: 100 },
-            { name: "Luvas", icon: "🧤", current: 60, goal: 100 },
-            { name: "Pares de Meias", icon: "🧦", current: 120, goal: 150 }, // Meta ajustada para o que já tem
-            { name: "Marmitas", icon: "🍛", current: 200, goal: 200 },
-            { name: "Água", icon: "💧", current: 0, goal: 200 },
-            { name: "Talheres", icon: "🍴", current: 0, goal: 200 },
-        ];
+        // --- CONFIGURAÇÕES ---
+        // URL da sua planilha do Google Sheets publicada como CSV
+        // IMPORTANTE: Na planilha, vá em "Arquivo" > "Compartilhar" > "Publicar na web"
+        // Selecione a página correta, escolha "Valores separados por vírgula (.csv)" e clique em "Publicar".
+        // Copie e cole o link gerado aqui.
+        const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ5F1q_q5z5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5-1vQ5F1q_q5z5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q5q/export?gid=0&single=true&output=csv';
+
+        // Mapeia o nome do item para um ícone
+        const iconMap = {
+            "Cobertores": "🛏️",
+            "Toucas": "🧢",
+            "Luvas": "🧤",
+            "Pares de Meias": "🧦",
+            "Marmitas": "🍛",
+            "Água": "💧",
+            "Talheres": "🍴"
+        };
 
         // --- LÓGICA PARA RENDERIZAR O PAINEL ---
-        document.addEventListener('DOMContentLoaded', () => {
-            const cardsContainer = document.getElementById('dashboard-cards');
-            const chartCanvas = document.getElementById('progressChart').getContext('2d');
+        document.addEventListener('DOMContentLoaded', async () => {
+            const pageContent = document.getElementById('page-content');
+            
+            try {
+                const response = await fetch(GOOGLE_SHEET_URL);
+                if (!response.ok) {
+                    throw new Error('Falha ao carregar dados da planilha. Verifique o link e as permissões de compartilhamento.');
+                }
+                const csvText = await response.text();
+                const donationData = parseCSV(csvText);
 
-            // Gerar os cards de métricas
-            donationData.forEach(item => {
-                const percentage = item.goal > 0 ? Math.round((item.current / item.goal) * 100) : 100;
-                const card = `
+                // Esconde o loading e mostra o conteúdo
+                document.getElementById('loading-state').style.display = 'none';
+                renderDashboard(donationData);
+                renderChart(donationData);
+
+            } catch (error) {
+                console.error("Erro ao buscar dados:", error);
+                pageContent.innerHTML = `<div class="text-center py-10 bg-red-100 text-red-700 rounded-lg">
+                                            <p class="font-bold">Ocorreu um erro!</p>
+                                            <p>${error.message}</p>
+                                            <p class="text-sm mt-2">Por favor, verifique se a planilha está publicada corretamente na web como CSV.</p>
+                                         </div>`;
+            }
+        });
+
+        function parseCSV(text) {
+            const lines = text.split(/\r\n|\n/);
+            const headers = lines[0].split(',');
+            
+            // Encontra os índices das colunas que nos interessam
+            const itemIndex = headers.findIndex(h => h.trim().toLowerCase() === 'item');
+            const currentIndex = headers.findIndex(h => h.trim().toLowerCase() === 'atual');
+            const goalIndex = headers.findIndex(h => h.trim().toLowerCase() === 'meta');
+
+            if (itemIndex === -1 || currentIndex === -1 || goalIndex === -1) {
+                throw new Error("A planilha deve conter as colunas 'Item', 'Atual' e 'Meta'.");
+            }
+
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                if (lines[i].trim() === '') continue;
+                const values = lines[i].split(',');
+                const itemName = values[itemIndex].trim().replace(/"/g, '');
+                
+                data.push({
+                    name: itemName,
+                    icon: iconMap[itemName] || '🎁',
+                    current: parseInt(values[currentIndex], 10) || 0,
+                    goal: parseInt(values[goalIndex], 10) || 0,
+                });
+            }
+            return data;
+        }
+
+        function renderDashboard(data) {
+            let cardsHTML = '<section id="dashboard-cards" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-8">';
+            data.forEach(item => {
+                const percentage = item.goal > 0 ? Math.min(100, Math.round((item.current / item.goal) * 100)) : 100;
+                cardsHTML += `
                     <div class="bg-white rounded-xl card-shadow p-4 flex flex-col items-center justify-center text-center">
                         <div class="text-4xl mb-2">${item.icon}</div>
                         <div class="text-lg font-bold text-slate-800">${item.current}</div>
@@ -117,13 +197,20 @@
                         <div class="text-xs text-slate-400 mt-1">${percentage}% da meta</div>
                     </div>
                 `;
-                cardsContainer.innerHTML += card;
             });
+            cardsHTML += '</section>';
+            document.getElementById('page-content').innerHTML = cardsHTML;
+        }
 
-            // Configurar e gerar o gráfico
-            const labels = donationData.map(item => item.name);
-            const currentData = donationData.map(item => item.current);
-            const goalData = donationData.map(item => item.goal);
+        function renderChart(data) {
+            const chartSection = document.getElementById('chart-section');
+            const chartCanvas = document.getElementById('progressChart').getContext('2d');
+            
+            chartSection.classList.remove('hidden');
+
+            const labels = data.map(item => item.name);
+            const currentData = data.map(item => item.current);
+            const goalData = data.map(item => item.goal);
 
             new Chart(chartCanvas, {
                 type: 'bar',
@@ -150,30 +237,16 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: '#e2e8f0' // slate-200
-                            }
-                        },
-                        x: {
-                             grid: {
-                                display: false
-                            }
-                        }
+                        y: { beginAtZero: true, grid: { color: '#e2e8f0' } },
+                        x: { grid: { display: false } }
                     },
                     plugins: {
-                        legend: {
-                            position: 'top',
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                        }
+                        legend: { position: 'top' },
+                        tooltip: { mode: 'index', intersect: false }
                     }
                 }
             });
-        });
+        }
     </script>
 </body>
 </html>
