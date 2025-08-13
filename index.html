@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel da Ação Social - Aqueça uma Vida!</title>
+    
+    <!-- Tailwind CSS para estilização rápida e responsiva -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js para o gráfico de progresso -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Google Fonts para uma tipografia mais agradável -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Estilos personalizados e para a fonte Poppins */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8fafc; /* Cor de fundo clara (slate-50) */
+        }
+        .card-shadow {
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .logo-img {
+            max-height: 50px;
+            height: auto;
+            width: auto;
+            filter: grayscale(80%);
+            opacity: 0.8;
+            transition: all 0.3s ease;
+        }
+        .logo-img:hover {
+            filter: grayscale(0%);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="text-gray-700">
+
+    <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-7xl">
+
+        <!-- Cabeçalho -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-800">Aqueça uma Vida Neste Inverno!</h1>
+            <p class="text-lg text-slate-500 mt-2">Ação Social em prol dos que mais precisam.</p>
+        </header>
+
+        <!-- Painel de Métricas (Dashboard) -->
+        <section id="dashboard-cards" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+            <!-- Os cards serão inseridos aqui pelo JavaScript -->
+        </section>
+
+        <!-- Gráfico de Progresso -->
+        <section class="bg-white rounded-xl card-shadow p-4 md:p-6 mb-8">
+            <h2 class="text-2xl font-bold text-slate-800 mb-4 text-center">Progresso da Arrecadação</h2>
+            <div>
+                <canvas id="progressChart"></canvas>
+            </div>
+        </section>
+        
+        <!-- Chamada para Ação (PIX) -->
+        <section class="text-center bg-blue-500 text-white rounded-xl card-shadow p-8 mb-8">
+            <h2 class="text-2xl md:text-3xl font-bold mb-2">Ajude-nos a bater a meta!</h2>
+            <p class="mb-4 text-blue-100">Cada gesto, por menor que seja, aquece um coração.</p>
+            <div class="inline-block bg-white text-blue-600 rounded-lg p-4">
+                <p class="text-sm font-semibold">CHAVE PIX (CELULAR)</p>
+                <p class="text-2xl font-bold tracking-wider">(11) 97985-9190</p>
+            </div>
+        </section>
+
+        <!-- Rodapé com Realização e Logos -->
+        <footer class="text-center pt-6 border-t border-slate-200">
+            <h3 class="text-sm font-semibold text-slate-500 mb-4">REALIZAÇÃO</h3>
+            <div class="flex justify-center items-center gap-8 mb-6">
+                <img src="https://i.imgur.com/jrLSj8y.png" alt="Logo UMADSA" class="logo-img" onerror="this.onerror=null;this.src='https://placehold.co/150x50/e2e8f0/64748b?text=UMADSA';">
+                <img src="https://i.imgur.com/OCfLpNH.jpeg" alt="Logo Legendários" class="logo-img" onerror="this.onerror=null;this.src='https://placehold.co/150x50/e2e8f0/64748b?text=Legendários';">
+                <img src="https://i.imgur.com/Stdkgrs.jpeg" alt="Logo Projeto IDE" class="logo-img" onerror="this.onerror=null;this.src='https://placehold.co/150x50/e2e8f0/64748b?text=Projeto+IDE';">
+            </div>
+            <p class="text-slate-400 italic text-sm">“Quem se compadece do pobre ao Senhor empresta, e Ele lhe pagará o seu benefício.” (Provérbios 19:17)</p>
+            <p class="text-slate-400 text-xs mt-4">Para mais informações, acesse a página oficial da UMADSA.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        // --- DADOS DA PLANILHA (Atualize os valores aqui) ---
+        const donationData = [
+            { name: "Cobertores", icon: "🛏️", current: 80, goal: 100 },
+            { name: "Toucas", icon: "🧢", current: 70, goal: 100 },
+            { name: "Luvas", icon: "🧤", current: 60, goal: 100 },
+            { name: "Pares de Meias", icon: "🧦", current: 120, goal: 150 }, // Meta ajustada para o que já tem
+            { name: "Marmitas", icon: "🍛", current: 200, goal: 200 },
+            { name: "Água", icon: "💧", current: 0, goal: 200 },
+            { name: "Talheres", icon: "🍴", current: 0, goal: 200 },
+        ];
+
+        // --- LÓGICA PARA RENDERIZAR O PAINEL ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const cardsContainer = document.getElementById('dashboard-cards');
+            const chartCanvas = document.getElementById('progressChart').getContext('2d');
+
+            // Gerar os cards de métricas
+            donationData.forEach(item => {
+                const percentage = item.goal > 0 ? Math.round((item.current / item.goal) * 100) : 100;
+                const card = `
+                    <div class="bg-white rounded-xl card-shadow p-4 flex flex-col items-center justify-center text-center">
+                        <div class="text-4xl mb-2">${item.icon}</div>
+                        <div class="text-lg font-bold text-slate-800">${item.current}</div>
+                        <div class="text-sm text-slate-500">${item.name}</div>
+                        <div class="w-full bg-slate-200 rounded-full h-2.5 mt-3">
+                            <div class="bg-green-500 h-2.5 rounded-full" style="width: ${percentage}%"></div>
+                        </div>
+                        <div class="text-xs text-slate-400 mt-1">${percentage}% da meta</div>
+                    </div>
+                `;
+                cardsContainer.innerHTML += card;
+            });
+
+            // Configurar e gerar o gráfico
+            const labels = donationData.map(item => item.name);
+            const currentData = donationData.map(item => item.current);
+            const goalData = donationData.map(item => item.goal);
+
+            new Chart(chartCanvas, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Arrecadado',
+                            data: currentData,
+                            backgroundColor: 'rgba(34, 197, 94, 0.7)', // green-500
+                            borderColor: 'rgba(22, 163, 74, 1)', // green-600
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Meta',
+                            data: goalData,
+                            backgroundColor: 'rgba(226, 232, 240, 0.7)', // slate-200
+                            borderColor: 'rgba(148, 163, 184, 1)', // slate-400
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#e2e8f0' // slate-200
+                            }
+                        },
+                        x: {
+                             grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
